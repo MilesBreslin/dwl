@@ -806,8 +806,7 @@ commitnotify(struct wl_listener *listener, void *data)
 		c->resize = 0;
 
 	// Damage the whole screen
-	if (c->mon)
-		wlr_output_damage_add_whole(c->mon->damage);
+	wlr_output_damage_add_whole(c->mon->damage);
 }
 
 void
@@ -934,7 +933,6 @@ createnotify(struct wl_listener *listener, void *data)
 	wlr_xdg_toplevel_set_tiled(c->surface.xdg, WLR_EDGE_TOP |
 			WLR_EDGE_BOTTOM | WLR_EDGE_LEFT | WLR_EDGE_RIGHT);
 
-	LISTEN(&xdg_surface->surface->events.commit, &c->commit, commitnotify);
 	LISTEN(&xdg_surface->surface->events.new_subsurface, &c->new_sub, new_subnotify);
 	LISTEN(&xdg_surface->events.map, &c->map, mapnotify);
 	LISTEN(&xdg_surface->events.unmap, &c->unmap, unmapnotify);
@@ -1396,6 +1394,7 @@ mapnotify(struct wl_listener *listener, void *data)
 		wl_list_insert(&independents, &c->link);
 		return;
 	}
+	LISTEN(&c->surface.xdg->surface->events.commit, &c->commit, commitnotify);
 
 	/* Insert this client into client lists. */
 	wl_list_insert(&clients, &c->link);
@@ -1433,6 +1432,7 @@ mapnotify_sub(struct wl_listener *listener, void *data)
 	Subsurface *s = wl_container_of(listener, s, map);
 	wl_list_insert(&subsurfaces, &s->link);
 	wlr_output_damage_add_whole(s->c->mon->damage);
+	LISTEN(&s->subsurface->surface->events.commit, &s->commit, commitnotify_sub);
 }
 
 
@@ -1581,7 +1581,6 @@ new_subnotify(struct wl_listener *listener, void *data) {
 	s->subsurface = subsurface;
 	s->c = wl_container_of(listener, s->c, new_sub);
 
-	LISTEN(&s->subsurface->surface->events.commit, &s->commit, commitnotify_sub);
 	LISTEN(&s->subsurface->events.map, &s->map, mapnotify_sub);
 	LISTEN(&s->subsurface->events.unmap, &s->unmap, unmapnotify_sub);
 	LISTEN(&s->subsurface->events.destroy, &s->destroy, destroynotify_sub);

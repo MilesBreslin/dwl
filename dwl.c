@@ -1394,7 +1394,6 @@ mapnotify(struct wl_listener *listener, void *data)
 		wl_list_insert(&independents, &c->link);
 		return;
 	}
-	LISTEN(&c->surface.xdg->surface->events.commit, &c->commit, commitnotify);
 
 	/* Insert this client into client lists. */
 	wl_list_insert(&clients, &c->link);
@@ -1413,9 +1412,10 @@ mapnotify(struct wl_listener *listener, void *data)
 
 #ifdef XWAYLAND
 	if (c->type != XDGShell)
-		if (c->surface.xwayland->surface)
-			LISTEN(&c->surface.xwayland->surface->events.commit, &c->commit, commitnotifyx11);
+		LISTEN(&c->surface.xwayland->surface->events.commit, &c->commit, commitnotifyx11);
+	else
 #endif
+		LISTEN(&c->surface.xdg->surface->events.commit, &c->commit, commitnotify);
 
 	if (c->mon->fullscreenclient && c->mon->fullscreenclient == oldfocus
 			&& !c->isfloating && c->mon->lt[c->mon->sellt]->arrange) {
@@ -2572,8 +2572,7 @@ commitnotifyx11(struct wl_listener *listener, void *data)
 	Client *c = wl_container_of(listener, c, commit);
 
 	// Damage the whole screen
-	if (c->mon)
-		wlr_output_damage_add_whole(c->mon->damage);
+	wlr_output_damage_add_whole(c->mon->damage);
 }
 
 Atom
